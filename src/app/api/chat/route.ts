@@ -34,8 +34,15 @@ export async function POST(req: NextRequest) {
 
     // 1. 실제 Gemini API 키가 존재하는 경우: Google GenAI 호출 시도
     if (apiKey && apiKey.length > 10) {
-      // 구글 AI 스튜디오 API 키는 통상 'AIzaSy'로 시작
-      const candidateModels = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+      // 최신 Gemini API 모델 후보군 (AQ. 신규 키 및 AIzaSy 레거시 키 모두 지원)
+      const candidateModels = [
+        'gemini-3.1-flash-lite',
+        'gemini-3.8-flash',
+        'gemini-flash-latest',
+        'gemini-2.5-flash-lite',
+        'gemini-2.5-flash',
+        'gemini-1.5-flash'
+      ];
 
       for (const modelName of candidateModels) {
         try {
