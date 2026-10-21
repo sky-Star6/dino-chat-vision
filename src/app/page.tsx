@@ -5,12 +5,14 @@ import confetti from 'canvas-confetti';
 import { Mic, MicOff, Sparkles, Send, Volume2, Info, Globe } from 'lucide-react';
 import { DinoCanvas } from '@/components/DinoCanvas';
 import { DINOSAURS, UI_TEXTS } from '@/data/dinosaurs';
-import { DinosaurType, Language } from '@/types/dinosaur';
+import { DinosaurType, Language, DifficultyLevel } from '@/types/dinosaur';
 import { useVoiceChat } from '@/hooks/useVoiceChat';
 
 export default function DinoChatPage() {
   // 현재 선택된 언어 (기본값: 영어 'en')
   const [language, setLanguage] = useState<Language>('en');
+  // 대화 난이도 (기본값: 초보자/어린이를 위한 'easy')
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>('easy');
   const t = UI_TEXTS[language]; // 현재 언어의 UI 텍스트 맵
 
   // 현재 선택된 공룡
@@ -45,7 +47,7 @@ export default function DinoChatPage() {
     });
   };
 
-  // 핸즈프리 보이스챗 커스텀 훅 연결 (언어 prop 전달)
+  // 핸즈프리 보이스챗 커스텀 훅 연결 (언어 및 난이도 prop 전달)
   const {
     isActive,
     mood,
@@ -60,6 +62,7 @@ export default function DinoChatPage() {
   } = useVoiceChat({
     currentDino,
     language,
+    difficulty,
     onHappyTrigger: triggerConfetti,
     onRoarTrigger: triggerRoarEffect
   });
@@ -177,6 +180,53 @@ export default function DinoChatPage() {
             );
           })}
         </div>
+
+        {/* 🌟 3단계 대화 난이도 선택 바 (초급 / 중급 / 고급) */}
+        <div className="mt-2.5 flex items-center justify-between bg-white/75 px-3 py-1.5 rounded-xl border border-white/80 backdrop-blur shadow-xs">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <span className="text-[11px] sm:text-xs">{t.difficulty.label}:</span>
+          </div>
+
+          <div className="flex items-center gap-1 bg-slate-100/90 p-0.5 rounded-lg border border-slate-200/80">
+            <button
+              onClick={() => setDifficulty('easy')}
+              className={`flex items-center gap-1 text-[11px] sm:text-xs px-2.5 py-1 rounded-md font-bold transition-all ${
+                difficulty === 'easy'
+                  ? 'bg-emerald-500 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title={t.difficulty.easyDesc}
+            >
+              <span>🟢</span>
+              <span>{t.difficulty.easy}</span>
+            </button>
+            <button
+              onClick={() => setDifficulty('normal')}
+              className={`flex items-center gap-1 text-[11px] sm:text-xs px-2.5 py-1 rounded-md font-bold transition-all ${
+                difficulty === 'normal'
+                  ? 'bg-amber-500 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title={t.difficulty.normalDesc}
+            >
+              <span>🟡</span>
+              <span>{t.difficulty.normal}</span>
+            </button>
+            <button
+              onClick={() => setDifficulty('hard')}
+              className={`flex items-center gap-1 text-[11px] sm:text-xs px-2.5 py-1 rounded-md font-bold transition-all ${
+                difficulty === 'hard'
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title={t.difficulty.hardDesc}
+            >
+              <span>🟣</span>
+              <span>{t.difficulty.hard}</span>
+            </button>
+          </div>
+        </div>
       </header>
 
       {/* 2. 중앙 3D 스테이지 및 공룡 렌더링 영역 */}
@@ -252,6 +302,36 @@ export default function DinoChatPage() {
             {errorMessage}
           </div>
         )}
+
+        {/* 💡 추천 질문 말풍선 칩 (탭하여 질문 바로 시작) */}
+        <div className="w-full max-w-xl mx-auto mb-3 px-1 animate-fade-in">
+          <div className="text-[11px] text-slate-500 font-semibold mb-1.5 flex items-center justify-between">
+            <span className="flex items-center gap-1 font-bold text-slate-700">
+              <span>💡</span>
+              <span>{t.promptHint}</span>
+            </span>
+            <span className="text-[10px] text-slate-500 bg-white/70 px-2 py-0.5 rounded-full border border-slate-200">
+              {difficulty === 'easy'
+                ? t.difficulty.easyDesc
+                : difficulty === 'normal'
+                ? t.difficulty.normalDesc
+                : t.difficulty.hardDesc}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+            {currentDino.suggestedPrompts[difficulty].map((item, idx) => (
+              <button
+                key={idx}
+                onClick={() => sendManualMessage(item[language])}
+                className="text-xs sm:text-sm bg-white/95 hover:bg-white active:scale-95 text-slate-700 hover:text-emerald-700 px-3 py-1.5 rounded-full shadow-sm border border-slate-200 hover:border-emerald-400 hover:shadow transition-all backdrop-blur flex items-center gap-1.5 cursor-pointer"
+                title={language === 'en' ? 'Tap to ask this question!' : '터치하여 이 질문하기!'}
+              >
+                <span>💬</span>
+                <span className="font-medium">{item[language]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* 핸즈프리 대화 시작 버튼 */}
         <div className="flex flex-col items-center justify-center gap-3">

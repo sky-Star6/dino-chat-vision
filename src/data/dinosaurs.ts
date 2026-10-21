@@ -42,6 +42,23 @@ export const DINOSAURS: Record<DinosaurType, DinosaurInfo> = {
 - Tag requirement: Always start your response with exactly ONE emotion tag: [HAPPY], [ROAR], [TALKING], or [THINKING].
   Example: "[HAPPY] Hello friend! That sounds like an awesome adventure! What should we do next?"
 - Keep your answers short (1-3 sentences) and conversational.`
+    },
+    suggestedPrompts: {
+      easy: [
+        { ko: '안녕! 나랑 친구할래?', en: 'Hi! Can we be friends?' },
+        { ko: '너는 고기가 좋아, 풀이 좋아?', en: 'Do you like meat or plants?' },
+        { ko: '나랑 같이 달리기 시합할래?', en: 'Do you want to run with me?' }
+      ],
+      normal: [
+        { ko: '티노야, 달리기 얼마나 빨라?', en: 'Tino, how fast can you run?' },
+        { ko: '앞발이 작은 이유는 뭐야?', en: 'Why are your arms so short?' },
+        { ko: '오늘 숲에서 뭐 하고 놀았어?', en: 'What did you play in the forest today?' }
+      ],
+      hard: [
+        { ko: '백악기 최상위 포식자의 사냥 전략은 어땠어?', en: 'What was your hunting strategy in the Cretaceous?' },
+        { ko: '티라노사우루스의 턱 힘은 얼마나 강했니?', en: 'How powerful was the T-Rex bite force?' },
+        { ko: '몸에 깃털이 실제로 있었는지 궁금해!', en: 'Did T-Rex really have feathers?' }
+      ]
     }
   },
   brachio: {
@@ -80,6 +97,23 @@ export const DINOSAURS: Record<DinosaurType, DinosaurInfo> = {
 - Tag requirement: Always start with ONE emotion tag: [HAPPY], [TALKING], or [THINKING].
   Example: "[HAPPY] Hello friend~ The sky looks so peaceful today. What brings you to the forest?"
 - Keep answers concise (1-3 sentences).`
+    },
+    suggestedPrompts: {
+      easy: [
+        { ko: '안녕! 너 키가 정말 크다!', en: 'Hi! You are so tall!' },
+        { ko: '초록 나뭇잎 맛있어?', en: 'Are green leaves yummy?' },
+        { ko: '너는 사과 좋아해?', en: 'Do you like apples?' }
+      ],
+      normal: [
+        { ko: '목이 긴 덕분에 어떤 점이 좋아?', en: 'What is great about having a long neck?' },
+        { ko: '하루에 나뭇잎을 얼마나 많이 먹어?', en: 'How many leaves do you eat in a day?' },
+        { ko: '숲속에서 가장 좋아하는 나무는 뭐야?', en: 'What is your favorite tree in the forest?' }
+      ],
+      hard: [
+        { ko: '거대한 몸집을 유지하기 위한 소화 기관의 특징은?', en: 'How did your digestive system sustain such giant mass?' },
+        { ko: '쥐라기 시대의 기후와 서식지는 어땠어?', en: 'What was the Jurassic climate and habitat like?' },
+        { ko: '천적들이 접근할 때 어떻게 방어했니?', en: 'How did your herd defend against predators?' }
+      ]
     }
   },
   tricera: {
@@ -118,6 +152,23 @@ export const DINOSAURS: Record<DinosaurType, DinosaurInfo> = {
 - Tag requirement: Always start with ONE emotion tag: [HAPPY], [ROAR], [TALKING], or [THINKING].
   Example: "[HAPPY] Hello! That sounds awesome! Tell me more about what you like!"
 - Keep answers 1-3 sentences.`
+    },
+    suggestedPrompts: {
+      easy: [
+        { ko: '안녕! 뿔이 세 개나 있네!', en: 'Hi! You have three cool horns!' },
+        { ko: '나랑 숨바꼭질할래?', en: 'Do you want to play hide and seek?' },
+        { ko: '좋아하는 색깔이 뭐야?', en: 'What is your favorite color?' }
+      ],
+      normal: [
+        { ko: '머리에 있는 넓은 프릴은 어디에 써?', en: 'What is the big frill on your head for?' },
+        { ko: '티라노가 나타나면 무섭지 않아?', en: 'Are you scared when a T-Rex appears?' },
+        { ko: '뿔로 바위를 밀어본 적 있어?', en: 'Have you ever pushed a rock with your horns?' }
+      ],
+      hard: [
+        { ko: '프릴의 체온 조절 기능과 방어 역할에 대해 알려줘.', en: 'Tell me about the frill’s thermoregulation and defense roles.' },
+        { ko: '백악기 후기 각룡류의 진화적 특징은 뭐야?', en: 'What were the evolutionary traits of Late Cretaceous ceratopsians?' },
+        { ko: '무리 생활을 하면서 사회적 의사소통은 어떻게 했어?', en: 'How did Triceratops herds communicate socially?' }
+      ]
     }
   },
   ptera: {
@@ -156,6 +207,23 @@ export const DINOSAURS: Record<DinosaurType, DinosaurInfo> = {
 - Tag requirement: Always start with ONE emotion tag: [HAPPY], [ROAR], [TALKING], or [THINKING].
   Example: "[HAPPY] Hello! Flying high above the clouds is so exciting! What fun stories do you have today?"
 - Keep answers 1-3 sentences.`
+    },
+    suggestedPrompts: {
+      easy: [
+        { ko: '안녕! 하늘 나는 거 신나?', en: 'Hi! Is flying fun?' },
+        { ko: '물고기 좋아해?', en: 'Do you like fish?' },
+        { ko: '구름 만져본 적 있어?', en: 'Have you touched a cloud?' }
+      ],
+      normal: [
+        { ko: '하늘을 얼마나 높이 날 수 있어?', en: 'How high can you fly in the sky?' },
+        { ko: '바다에서 물고기는 어떻게 낚아채?', en: 'How do you scoop fish from the sea?' },
+        { ko: '날개는 깃털이야, 가죽이야?', en: 'Are your wings feathered or leathery?' }
+      ],
+      hard: [
+        { ko: '익룡의 뼈 속 공기 주머니(기낭) 구조에 대해 알려줘.', en: 'Tell me about the pneumatic bone structures in pterosaurs.' },
+        { ko: '상승 기류를 이용한 활공 비행 역학은 어땠어?', en: 'How did you utilize thermal updrafts for gliding aerodynamics?' },
+        { ko: '조류(새)와 익룡의 날개 진화 차이점은 뭐야?', en: 'What are the evolutionary differences between birds and pterosaurs?' }
+      ]
     }
   }
 };
@@ -177,6 +245,16 @@ export const UI_TEXTS: Record<Language, {
   inputPlaceholder: string;
   listeningIndicator: string;
   talkingIndicator: string;
+  promptHint: string;
+  difficulty: {
+    label: string;
+    easy: string;
+    normal: string;
+    hard: string;
+    easyDesc: string;
+    normalDesc: string;
+    hardDesc: string;
+  };
   moods: {
     listening: string;
     thinking: string;
@@ -201,6 +279,16 @@ export const UI_TEXTS: Record<Language, {
     inputPlaceholder: '텍스트로도 물어보세요...',
     listeningIndicator: '내 목소리 감지 중...',
     talkingIndicator: '말하는 중...',
+    promptHint: '💡 터치해서 바로 질문해 보세요:',
+    difficulty: {
+      label: '대화 난이도',
+      easy: '쉬움 (새싹)',
+      normal: '보통 (탐험가)',
+      hard: '박사 (전문가)',
+      easyDesc: '초보자·어린이용: 1~2문장, 쉬운 단어, 천천히 말하기',
+      normalDesc: '기본 모드: 친근한 2~3문장 일상 대화',
+      hardDesc: '고급 모드: 깊이 있는 공룡 지식과 풍부한 어휘'
+    },
     moods: {
       listening: '👂 귀 기울여 듣는 중...',
       thinking: '💭 생각하는 중...',
@@ -225,6 +313,16 @@ export const UI_TEXTS: Record<Language, {
     inputPlaceholder: 'Type a message in English...',
     listeningIndicator: 'Hearing your voice...',
     talkingIndicator: 'Speaking...',
+    promptHint: '💡 Tap a quick question to ask:',
+    difficulty: {
+      label: 'Difficulty',
+      easy: 'Easy (Kids)',
+      normal: 'Normal (Explorer)',
+      hard: 'Expert (Scholar)',
+      easyDesc: 'Beginners: 1-2 short sentences, simple words, slow speech',
+      normalDesc: 'Standard: 2-3 sentence casual chat',
+      hardDesc: 'Advanced: Deep paleontology facts & rich vocabulary'
+    },
     moods: {
       listening: '👂 Listening closely...',
       thinking: '💭 Thinking...',

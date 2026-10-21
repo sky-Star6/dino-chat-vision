@@ -3,6 +3,9 @@
 // 지원 언어 타입 (한국어 / 영어)
 export type Language = 'ko' | 'en';
 
+// 대화 난이도 타입 (초급 / 중급 / 고급)
+export type DifficultyLevel = 'easy' | 'normal' | 'hard';
+
 // 공룡 캐릭터 식별자 타입
 export type DinosaurType = 'trex' | 'brachio' | 'tricera' | 'ptera';
 
@@ -29,6 +32,7 @@ export interface DinosaurInfo {
   voicePitch: number; // 음성 높낮이 (0.5 ~ 2.0)
   voiceRate: number; // 음성 속도 (0.5 ~ 2.0)
   systemPrompt: LocalizedString; // Gemini 인공지능 프롬프트 (한국어 / 영어)
+  suggestedPrompts: Record<DifficultyLevel, LocalizedString[]>; // 난이도별 추천 질문 칩
 }
 
 // 대화 메시지 인터페이스

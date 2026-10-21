@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { DINOSAURS } from '@/data/dinosaurs';
-import { DinosaurType, Language } from '@/types/dinosaur';
+import { DinosaurType, Language, DifficultyLevel } from '@/types/dinosaur';
 
 /**
- * Vercel Serverless Function: 다국어(한국어/영어) 지원 공룡 챗봇 대화 라우트
+ * Vercel Serverless Function: 다국어(한국어/영어) 및 난이도별(초급/중급/고급) 지원 공룡 챗봇 대화 라우트
  * - POST /api/chat
  * - Gemini API 연결 실패 또는 유효하지 않은 키일 때도 다채로운 공룡 반응 생성
  */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { dinoId, language = 'en', message, history } = body as {
+    const { dinoId, language = 'en', difficulty = 'normal', message, history } = body as {
       dinoId: DinosaurType;
       language?: Language;
+      difficulty?: DifficultyLevel;
       message: string;
       history?: Array<{ role: 'user' | 'model'; parts: [{ text: string }] }>;
     };
@@ -27,7 +28,43 @@ export async function POST(req: NextRequest) {
 
     const currentDino = DINOSAURS[dinoId] || DINOSAURS.trex;
     const apiKey = process.env.GEMINI_API_KEY?.trim();
-    const systemPrompt = currentDino.systemPrompt[language];
+    const baseSystemPrompt = currentDino.systemPrompt[language];
+
+    // 난이도별 맞춤 프롬프트 주입 (초보자: 1~2문장 단답/선택형 질문, 중급: 2~3문장, 고급: 3~4문장 고생물학 지식)
+    let difficultyInstruction = '';
+    if (language === 'ko') {
+      if (difficulty === 'easy') {
+        difficultyInstruction = `\n[대화 난이도: 초급/새싹 (초보자 및 어린이 모드)]
+- 문장 길이: 반드시 1~2문장의 아주 짧고 명확한 문장만 사용하세요.
+- 어휘: 가장 쉽고 기초적인 일상 단어(과일, 색깔, 동물, 음식 등)만 쓰세요.
+- 질문 유도: 상대방이 쉽게 답할 수 있도록 "A가 좋아 B가 좋아?" 같은 양자택일형 또는 "응/아니" 단답형 질문으로 문장을 마무리하세요.`;
+      } else if (difficulty === 'hard') {
+        difficultyInstruction = `\n[대화 난이도: 고급/공룡 박사 모드]
+- 문장 길이: 3~4문장의 풍부하고 상세한 문장으로 설명하세요.
+- 어휘: 고생물학, 백악기/쥐라기 생태, 화석, 해부학적 특징 등 전문적이고 흥미진진한 지식 어휘를 적극 활용하세요.
+- 질문 유도: 상대방의 호기심과 사고력을 자극하는 깊이 있는 질문을 던지세요.`;
+      } else {
+        difficultyInstruction = `\n[대화 난이도: 중급/기본 모드]
+- 문장 길이: 2~3문장의 자연스럽고 친근한 일상 대화체로 대답하세요.`;
+      }
+    } else {
+      if (difficulty === 'easy') {
+        difficultyInstruction = `\n[DIFFICULTY: EASY / BEGINNER KIDS MODE]
+- Length: Strictly 1 to 2 very short, simple sentences.
+- Vocabulary: Use only elementary, basic words (A1 level). No complex grammar or long words.
+- Question Rule: Always end with a simple choice question (e.g. "Do you like apples or bananas?") or a simple Yes/No question so beginners can easily reply.`;
+      } else if (difficulty === 'hard') {
+        difficultyInstruction = `\n[DIFFICULTY: HARD / EXPERT SCHOLAR MODE]
+- Length: 3 to 4 vivid, detailed sentences.
+- Vocabulary: Rich paleontological facts, geological periods (Cretaceous/Jurassic), anatomy, and ecological trivia.
+- Question Rule: Ask thought-provoking, imaginative questions.`;
+      } else {
+        difficultyInstruction = `\n[DIFFICULTY: NORMAL / STANDARD EXPLORER MODE]
+- Length: 2 to 3 sentences of friendly, natural conversational English.`;
+      }
+    }
+
+    const effectiveSystemPrompt = `${baseSystemPrompt}\n${difficultyInstruction}`;
 
     let isApiKeyValid = false;
     let apiKeyErrorMessage: string | null = null;
@@ -57,7 +94,7 @@ export async function POST(req: NextRequest) {
               }
             ],
             config: {
-              systemInstruction: systemPrompt,
+              systemInstruction: effectiveSystemPrompt,
               temperature: 0.85,
               maxOutputTokens: 250
             }
@@ -79,7 +116,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. 키가 없거나 유효하지 않을 때: 다채롭고 재미있는 스마트 시뮬레이션 응답 반환
-    const simulatedReply = generateRichSmartReply(dinoId, language, message);
+    const simulatedReply = generateRichSmartReply(dinoId, language, message, difficulty);
     return NextResponse.json({
       reply: simulatedReply,
       isAi: isApiKeyValid,
@@ -97,13 +134,31 @@ export async function POST(req: NextRequest) {
 /**
  * 키워드 및 대화 맥락에 반응하여 매번 다른 대답을 주는 스마트 시뮬레이터
  */
-function generateRichSmartReply(dinoId: DinosaurType, language: Language, message: string): string {
+function generateRichSmartReply(
+  dinoId: DinosaurType,
+  language: Language,
+  message: string,
+  difficulty: DifficultyLevel = 'normal'
+): string {
   const cleanMsg = message.toLowerCase().trim();
 
   // ==========================================
   // 🇺🇸 영어 모드 (English Mode)
   // ==========================================
   if (language === 'en') {
+    if (difficulty === 'easy') {
+      if (cleanMsg.includes('hello') || cleanMsg.includes('hi') || cleanMsg.includes('hey')) {
+        return '[HAPPY] Hello friend! Do you like red or blue?';
+      }
+      if (cleanMsg.includes('eat') || cleanMsg.includes('food')) {
+        return '[TALKING] I eat leaves! Do you like apples or bananas?';
+      }
+      if (cleanMsg.includes('friend')) {
+        return '[HAPPY] Yes! We are best friends! Do you want to play?';
+      }
+      return `[HAPPY] I hear you! Do you like dinosaurs? Yes or no?`;
+    }
+
     if (cleanMsg.includes('hello') || cleanMsg.includes('hi') || cleanMsg.includes('hey')) {
       const greetings = [
         "[HAPPY] Hello my best friend! Are you ready for an exciting adventure today?",
@@ -149,6 +204,19 @@ function generateRichSmartReply(dinoId: DinosaurType, language: Language, messag
   // ==========================================
   // 🇰🇷 한국어 모드 (Korean Mode)
   // ==========================================
+  if (difficulty === 'easy') {
+    if (cleanMsg.includes('안녕') || cleanMsg.includes('반가워')) {
+      return '[HAPPY] 안녕 친구야! 너는 사과가 좋아, 바나나가 좋아?';
+    }
+    if (cleanMsg.includes('밥') || cleanMsg.includes('먹')) {
+      return '[TALKING] 나는 맛있는 풀을 먹었어! 너는 고기 좋아해, 과일 좋아해?';
+    }
+    if (cleanMsg.includes('친구')) {
+      return '[HAPPY] 응! 우리 오늘부터 제일 친한 친구야! 같이 놀래?';
+    }
+    return `[HAPPY] 잘 들었어! 너는 공룡 좋아해? 응 아니면 아니라고 해줘!`;
+  }
+
   if (cleanMsg.includes('안녕') || cleanMsg.includes('반가워')) {
     const greetings = [
       '[HAPPY] 안녕 친구야! 오늘 어떤 신나는 이야기를 나눠볼까?',

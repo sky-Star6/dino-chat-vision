@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { DinosaurInfo, DinosaurMood, ChatMessage, Language } from '@/types/dinosaur';
+import { DinosaurInfo, DinosaurMood, ChatMessage, Language, DifficultyLevel } from '@/types/dinosaur';
 
 interface UseVoiceChatProps {
   currentDino: DinosaurInfo;
   language: Language; // 현재 선택된 언어 ('ko' | 'en')
+  difficulty?: DifficultyLevel; // 대화 난이도 ('easy' | 'normal' | 'hard')
   onRoarTrigger?: () => void;
   onHappyTrigger?: () => void;
 }
@@ -17,6 +18,7 @@ interface UseVoiceChatProps {
 export const useVoiceChat = ({
   currentDino,
   language,
+  difficulty = 'normal',
   onRoarTrigger,
   onHappyTrigger
 }: UseVoiceChatProps) => {
@@ -45,11 +47,13 @@ export const useVoiceChat = ({
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const currentDinoRef = useRef(currentDino);
   const languageRef = useRef(language);
+  const difficultyRef = useRef(difficulty);
   const latestTranscriptRef = useRef('');
   const lipSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   currentDinoRef.current = currentDino;
   languageRef.current = language;
+  difficultyRef.current = difficulty;
   isActiveRef.current = isActive;
 
   // 1. 브라우저 지원 여부 확인
@@ -180,9 +184,12 @@ export const useVoiceChat = ({
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     const currentLang = languageRef.current;
+    const currentDiff = difficultyRef.current || 'normal';
+    // 난이도별 발화 속도(Rate) 조절: 초급은 0.85배로 천천히 명확하게, 고급은 1.05배
+    const rateMultiplier = currentDiff === 'easy' ? 0.85 : currentDiff === 'hard' ? 1.05 : 1.0;
     utterance.lang = currentLang === 'en' ? 'en-US' : 'ko-KR';
     utterance.pitch = currentDinoRef.current.voicePitch;
-    utterance.rate = currentDinoRef.current.voiceRate;
+    utterance.rate = currentDinoRef.current.voiceRate * rateMultiplier;
 
     const voices = window.speechSynthesis.getVoices();
     if (currentLang === 'en') {
@@ -253,6 +260,7 @@ export const useVoiceChat = ({
         body: JSON.stringify({
           dinoId: currentDinoRef.current.id,
           language: currentLang,
+          difficulty: difficultyRef.current || 'normal',
           message: userSpeech,
           history: messages.slice(-6).map((m) => ({
             role: m.sender === 'user' ? 'user' : 'model',
