@@ -375,13 +375,6 @@ export default function DinoChatPage() {
                   style={{ width: `${Math.max(4, micLevel)}%` }}
                 />
               </div>
-              {micLevel < 5 && (
-                <p className="text-[10px] text-amber-600 animate-pulse text-center">
-                  {language === 'en'
-                    ? '💡 If 0%, please speak closer to your mic or allow mic in browser.'
-                    : '💡 소리가 0%라면 마이크 권한 또는 마이크 입력 볼륨을 확인해 주세요.'}
-                </p>
-              )}
             </div>
           )}
 
