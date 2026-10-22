@@ -38,6 +38,11 @@ export const useVoiceChat = ({
   const isListeningRef = useRef(false);
   const isActiveRef = useRef(false);
   const isSpeakingRef = useRef(false);
+  // 공룡 발화 중 마이크 인식을 완전히 차단하는 제어 플래그
+  const shouldListenRef = useRef(false);
+  // 공룡이 직전에 발화한 텍스트 및 완료 시간 (스피커 에코 루프 차단용)
+  const lastDinoSpeechTextRef = useRef('');
+  const dinoSpeechEndTimeRef = useRef(0);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -182,6 +187,27 @@ export const useVoiceChat = ({
     const cleanText = text.replace(/\[(HAPPY|ROAR|TALKING|THINKING|CONFUSED)\]/g, '').trim();
     if (!cleanText) return;
 
+    // 🌟 핵심 1: 공룡 발화 준비 즉시 마이크 청취 플래그 차단 및 잔여 버퍼/침묵 타이머 폐기
+    isSpeakingRef.current = true;
+    shouldListenRef.current = false;
+    lastDinoSpeechTextRef.current = cleanText;
+
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    latestTranscriptRef.current = '';
+    setTranscript('');
+
+    // 마이크가 켜져 있다면 강제로 abort하여 스피커 소리가 마이크 버퍼에 남지 않도록 버퍼 폐기
+    if (recognitionRef.current && isListeningRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {
+        // ignore
+      }
+    }
+
     const utterance = new SpeechSynthesisUtterance(cleanText);
     const currentLang = languageRef.current;
     const currentDiff = difficultyRef.current || 'normal';
@@ -202,6 +228,7 @@ export const useVoiceChat = ({
 
     utterance.onstart = () => {
       isSpeakingRef.current = true;
+      shouldListenRef.current = false;
       setMood(responseMood || 'talking');
 
       if (lipSyncIntervalRef.current) clearInterval(lipSyncIntervalRef.current);
@@ -211,24 +238,35 @@ export const useVoiceChat = ({
       }, 90);
     };
 
-    utterance.onend = () => {
+    // 발화 종료 또는 에러 시 마이크를 안전하게 재개하는 공통 처리
+    const finishSpeaking = () => {
       setAudioVolume(0);
       if (lipSyncIntervalRef.current) clearInterval(lipSyncIntervalRef.current);
       setMood('idle');
-      // 🌟 핵심: 공룡 말이 끝난 뒤 800ms 동안 마이크 입력을 무시하여 스피커 잔향(에코) 방지
+      dinoSpeechEndTimeRef.current = Date.now();
+
+      // 🌟 핵심 2: 스피커 재생 완료 후 1200ms 동안 잔향 및 실내 에코를 대기한 뒤에만 마이크를 재가동
       setTimeout(() => {
         isSpeakingRef.current = false;
-      }, 800);
+        latestTranscriptRef.current = '';
+        setTranscript('');
+
+        // 세션이 활성화 상태인 경우에만 마이크 다시 청취 시작
+        if (isActiveRef.current) {
+          shouldListenRef.current = true;
+          if (!isListeningRef.current && recognitionRef.current) {
+            try {
+              recognitionRef.current.start();
+            } catch {
+              // already started
+            }
+          }
+        }
+      }, 1200);
     };
 
-    utterance.onerror = () => {
-      setAudioVolume(0);
-      if (lipSyncIntervalRef.current) clearInterval(lipSyncIntervalRef.current);
-      setMood('idle');
-      setTimeout(() => {
-        isSpeakingRef.current = false;
-      }, 500);
-    };
+    utterance.onend = finishSpeaking;
+    utterance.onerror = finishSpeaking;
 
     window.speechSynthesis.speak(utterance);
   }, []);
@@ -237,14 +275,33 @@ export const useVoiceChat = ({
    * Gemini 인공지능 API를 호출하여 공룡 답변 수신
    */
   const requestDinoReply = useCallback(async (userSpeech: string) => {
-    if (!userSpeech.trim()) return;
+    const trimmedSpeech = userSpeech.trim();
+    if (!trimmedSpeech) return;
+
+    // 🌟 핵심 3: 방금 공룡이 한 말과 일치하는 스피커 소리 재인식(Echo Feedback Loop) 방지
+    const lastDinoText = (lastDinoSpeechTextRef.current || '').replace(/[^\w\s가-힣]/g, '').trim();
+    const cleanUserSpeech = trimmedSpeech.replace(/[^\w\s가-힣]/g, '').trim();
+    const timeSinceDinoSpoke = Date.now() - dinoSpeechEndTimeRef.current;
+
+    if (timeSinceDinoSpoke < 3500 && lastDinoText && cleanUserSpeech.length >= 4) {
+      if (
+        lastDinoText === cleanUserSpeech ||
+        (cleanUserSpeech.length >= 8 && lastDinoText.includes(cleanUserSpeech)) ||
+        (lastDinoText.length >= 8 && cleanUserSpeech.includes(lastDinoText))
+      ) {
+        console.warn('🔇 스피커 소리 재인식(Echo Loop) 차단됨:', trimmedSpeech);
+        setTranscript('');
+        latestTranscriptRef.current = '';
+        return;
+      }
+    }
 
     const currentLang = languageRef.current;
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       sender: 'user',
-      text: userSpeech,
+      text: trimmedSpeech,
       timestamp: Date.now()
     };
     setMessages((prev) => [...prev, userMsg]);
@@ -261,7 +318,7 @@ export const useVoiceChat = ({
           dinoId: currentDinoRef.current.id,
           language: currentLang,
           difficulty: difficultyRef.current || 'normal',
-          message: userSpeech,
+          message: trimmedSpeech,
           history: messages.slice(-6).map((m) => ({
             role: m.sender === 'user' ? 'user' : 'model',
             parts: [{ text: m.text }]
@@ -332,8 +389,16 @@ export const useVoiceChat = ({
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onresult = (event: any) => {
-      // 🌟 공룡이 말하고 있거나 쿨다운 중일 때는 스피커 소리가 마이크로 들어오는 것을 완전히 차단!
-      if (isSpeakingRef.current) {
+      // 🌟 공룡이 말하고 있거나(isSpeakingRef), 마이크 청취 모드가 아니거나(!shouldListenRef),
+      // 브라우저 TTS 엔진이 아직 말하고 있는 중(speechSynthesis.speaking)이면 스피커 소리 입력 차단
+      if (
+        isSpeakingRef.current ||
+        !shouldListenRef.current ||
+        (typeof window !== 'undefined' &&
+          window.speechSynthesis &&
+          (window.speechSynthesis.speaking || window.speechSynthesis.pending))
+      ) {
+        latestTranscriptRef.current = '';
         return;
       }
 
@@ -358,7 +423,12 @@ export const useVoiceChat = ({
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         silenceTimerRef.current = setTimeout(() => {
           const textToSend = latestTranscriptRef.current;
-          if (textToSend && isActiveRef.current) {
+          if (
+            textToSend &&
+            isActiveRef.current &&
+            shouldListenRef.current &&
+            !isSpeakingRef.current
+          ) {
             requestDinoReplyRef.current(textToSend);
           }
         }, 1000);
@@ -390,10 +460,15 @@ export const useVoiceChat = ({
 
     recognition.onend = () => {
       isListeningRef.current = false;
-      // 세션이 아직 활성화되어 있다면 브라우저 타임아웃 종료 후 200ms 뒤 안전하게 재시작
-      if (isActiveRef.current) {
+      // 🌟 오직 shouldListenRef.current가 true일 때만 (공룡 발화 중이 아닐 때만) 안전하게 재시작!
+      if (isActiveRef.current && shouldListenRef.current) {
         setTimeout(() => {
-          if (isActiveRef.current && !isListeningRef.current && recognitionRef.current) {
+          if (
+            isActiveRef.current &&
+            shouldListenRef.current &&
+            !isListeningRef.current &&
+            recognitionRef.current
+          ) {
             try {
               recognitionRef.current.start();
             } catch {
@@ -430,9 +505,10 @@ export const useVoiceChat = ({
 
     if (isActive) {
       isActiveRef.current = false;
+      shouldListenRef.current = false;
       setIsActive(false);
       try {
-        recognitionRef.current.stop();
+        recognitionRef.current.abort();
       } catch {
         // ignore
       }
@@ -448,11 +524,12 @@ export const useVoiceChat = ({
         isActiveRef.current = true;
         setIsActive(true);
         setMood('idle');
+        shouldListenRef.current = false;
 
         recognitionRef.current.lang = languageRef.current === 'en' ? 'en-US' : 'ko-KR';
-        recognitionRef.current.start();
         startMicAudioMonitoring(); // 실시간 마이크 레벨 모니터링 시작
 
+        // 🌟 인사말을 먼저 재생합니다. 인사말 재생이 끝난 후(1.2초 쿨다운 뒤) 마이크가 자동으로 안전하게 켜집니다.
         speakDinoResponse(currentDinoRef.current.greeting[languageRef.current], 'happy');
       } catch (err) {
         console.warn('음성 인식 시작 오류:', err);
